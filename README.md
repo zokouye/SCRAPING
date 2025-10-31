@@ -37,8 +37,9 @@ configuration file.
 
 ### Quick demo
 
-Run the scraper with the demo configuration and sample data (no network
-traffic):
+Run the scraper with the demo configuration and sample data. In demo mode the
+script skips all outbound HTTP requests and uses the bundled fixtures, making
+it safe to run offline:
 
 ```bash
 python multi_market_scraper.py --demo --verbose
@@ -59,6 +60,7 @@ platforms, request settings, and alerts:
   "radius_km": 30,
   "postal_code": "75000",
   "export_path": "output/deals.csv",
+  "use_sample_data": false,
   "request": {
     "delay": 2.0,
     "max_retries": 4,
@@ -95,6 +97,10 @@ platforms, request settings, and alerts:
 }
 ```
 
+Set `"use_sample_data": true` in the configuration if you want to reuse the
+fixture payloads instead of performing live network requests (useful for CI or
+when developing new filters).
+
 Run the scraper with the configuration file:
 
 ```bash
@@ -106,8 +112,8 @@ python multi_market_scraper.py --config config.json --verbose
 * `--config PATH` – JSON configuration file. If omitted, the default config is
   used.
 * `--export PATH` – Override the CSV export destination.
-* `--demo` – Use built-in configuration and sample responses. Helpful for local
-  testing without network access.
+* `--demo` – Use built-in configuration and sample responses, bypassing network
+  calls. Helpful for local testing without network access.
 * `--verbose` – Enable debug logging.
 
 ## Alert channels

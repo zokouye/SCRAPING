@@ -101,6 +101,7 @@ class SearchConfig:
     request: RequestSettings = field(default_factory=RequestSettings)
     alerts: AlertSettings = field(default_factory=AlertSettings)
     export_path: Path = Path("listings.csv")
+    use_sample_data: bool = False
 
     @staticmethod
     def from_dict(raw: Mapping[str, Any]) -> "SearchConfig":
@@ -118,6 +119,7 @@ class SearchConfig:
             request=request,
             alerts=alerts,
             export_path=Path(raw.get("export_path", "listings.csv")),
+            use_sample_data=bool(raw.get("use_sample_data", False)),
         )
 
 
@@ -344,6 +346,11 @@ def _coerce_float(value: Any) -> Optional[float]:
 def scrape_leboncoin(
     config: SearchConfig, http_client: HttpClient, platform: PlatformConfig
 ) -> List[Listing]:
+    if config.use_sample_data:
+        logger.debug("Using sample data for Leboncoin")
+        items = SAMPLE_RESPONSES["leboncoin"]
+        return [_normalise_item("Leboncoin", item, config.currency) for item in items]
+
     params = {
         "text": " ".join(config.keywords),
         "price_min": config.min_price,
@@ -365,6 +372,11 @@ def scrape_leboncoin(
 def scrape_vinted(
     config: SearchConfig, http_client: HttpClient, platform: PlatformConfig
 ) -> List[Listing]:
+    if config.use_sample_data:
+        logger.debug("Using sample data for Vinted")
+        items = SAMPLE_RESPONSES["vinted"]
+        return [_normalise_item("Vinted", item, config.currency) for item in items]
+
     params = {
         "search_text": " ".join(config.keywords),
         "price_from": config.min_price,
@@ -385,6 +397,11 @@ def scrape_vinted(
 def scrape_ebay(
     config: SearchConfig, http_client: HttpClient, platform: PlatformConfig
 ) -> List[Listing]:
+    if config.use_sample_data:
+        logger.debug("Using sample data for eBay")
+        items = SAMPLE_RESPONSES["ebay"]
+        return [_normalise_item("eBay", item, config.currency) for item in items]
+
     params = {
         "_nkw": " ".join(config.keywords),
         "_udlo": config.min_price,
@@ -597,6 +614,9 @@ def build_config(args: argparse.Namespace) -> SearchConfig:
         config = default_config()
     else:
         config = load_config_from_file(args.config)
+
+    if args.demo:
+        config.use_sample_data = True
 
     if args.export:
         config.export_path = args.export
