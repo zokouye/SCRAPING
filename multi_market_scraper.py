@@ -344,12 +344,15 @@ def _coerce_float(value: Any) -> Optional[float]:
 
 
 def scrape_leboncoin(
-    config: SearchConfig, http_client: HttpClient, platform: PlatformConfig
+    config: SearchConfig, http_client: Optional[HttpClient], platform: PlatformConfig
 ) -> List[Listing]:
     if config.use_sample_data:
         logger.debug("Using sample data for Leboncoin")
         items = SAMPLE_RESPONSES["leboncoin"]
         return [_normalise_item("Leboncoin", item, config.currency) for item in items]
+
+    if http_client is None:
+        raise RuntimeError("HTTP client unavailable for live Leboncoin scraping")
 
     params = {
         "text": " ".join(config.keywords),
@@ -370,12 +373,15 @@ def scrape_leboncoin(
 
 
 def scrape_vinted(
-    config: SearchConfig, http_client: HttpClient, platform: PlatformConfig
+    config: SearchConfig, http_client: Optional[HttpClient], platform: PlatformConfig
 ) -> List[Listing]:
     if config.use_sample_data:
         logger.debug("Using sample data for Vinted")
         items = SAMPLE_RESPONSES["vinted"]
         return [_normalise_item("Vinted", item, config.currency) for item in items]
+
+    if http_client is None:
+        raise RuntimeError("HTTP client unavailable for live Vinted scraping")
 
     params = {
         "search_text": " ".join(config.keywords),
@@ -395,12 +401,15 @@ def scrape_vinted(
 
 
 def scrape_ebay(
-    config: SearchConfig, http_client: HttpClient, platform: PlatformConfig
+    config: SearchConfig, http_client: Optional[HttpClient], platform: PlatformConfig
 ) -> List[Listing]:
     if config.use_sample_data:
         logger.debug("Using sample data for eBay")
         items = SAMPLE_RESPONSES["ebay"]
         return [_normalise_item("eBay", item, config.currency) for item in items]
+
+    if http_client is None:
+        raise RuntimeError("HTTP client unavailable for live eBay scraping")
 
     params = {
         "_nkw": " ".join(config.keywords),
@@ -566,7 +575,12 @@ def default_config() -> SearchConfig:
 
 
 def run_scrapers(config: SearchConfig) -> List[Listing]:
-    http_client = HttpClient(config.request)
+    http_client: Optional[HttpClient]
+    if config.use_sample_data:
+        http_client = None
+        logger.debug("Demo mode active - HTTP client disabled")
+    else:
+        http_client = HttpClient(config.request)
     listings: List[Listing] = []
 
     for platform in config.platforms:
