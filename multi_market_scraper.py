@@ -17,6 +17,8 @@ import argparse
 import csv
 import json
 import logging
+import math
+import numbers
 import smtplib
 import sys
 import time
@@ -200,6 +202,15 @@ def _clean_params(params: Optional[Mapping[str, Any]]) -> Dict[str, Any]:
 
     def _sanitize(value: Any) -> Any:
         if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, numbers.Real):
+            try:
+                if math.isfinite(float(value)):
+                    return value
+            except (TypeError, ValueError, OverflowError):
+                return None
             return None
         if isinstance(value, str):
             trimmed = value.strip()
