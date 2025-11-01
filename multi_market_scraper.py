@@ -193,11 +193,23 @@ class HttpClient:
 
 
 def _clean_params(params: Optional[Mapping[str, Any]]) -> Dict[str, Any]:
+    """Remove null/empty values from query dictionaries."""
+
     if not params:
         return {}
+
     clean: Dict[str, Any] = {}
     for key, value in params.items():
         if value is None:
+            continue
+        if isinstance(value, str):
+            if not value.strip():
+                continue
+            clean[key] = value
+            continue
+        if isinstance(value, Mapping) and not value:
+            continue
+        if isinstance(value, (list, tuple, set)) and not value:
             continue
         clean[key] = value
     return clean
