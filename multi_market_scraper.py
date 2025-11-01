@@ -151,15 +151,16 @@ class HttpClient:
         """Perform a GET request returning parsed JSON."""
 
         attempts = 0
+        clean_params = _clean_params(params)
         while attempts <= self.settings.max_retries:
             attempts += 1
             self._respect_delay()
             try:
-                logger.debug("GET %s params=%s attempt=%s", url, params, attempts)
+                logger.debug("GET %s params=%s attempt=%s", url, clean_params, attempts)
                 if self.session is not None:
                     response = self.session.get(
                         url,
-                        params=params,
+                        params=clean_params,
                         timeout=self.settings.timeout,
                     )
                     self._last_request_at = time.time()
@@ -168,9 +169,8 @@ class HttpClient:
 
                 # Fallback to urllib when requests is unavailable
                 request_headers = dict(self.settings.headers)
-                query = _clean_params(params)
-                if query:
-                    url_with_params = f"{url}?{urllib.parse.urlencode(query)}"
+                if clean_params:
+                    url_with_params = f"{url}?{urllib.parse.urlencode(clean_params)}"
                 else:
                     url_with_params = url
                 request = urllib.request.Request(url_with_params, headers=request_headers)
@@ -359,6 +359,7 @@ def scrape_leboncoin(
         "price_min": config.min_price,
         "price_max": config.max_price,
         "zipcode": config.postal_code,
+        "radius": config.radius_km,
         **platform.extra_params,
     }
 
@@ -387,6 +388,8 @@ def scrape_vinted(
         "search_text": " ".join(config.keywords),
         "price_from": config.min_price,
         "price_to": config.max_price,
+        "search_postal_code": config.postal_code,
+        "search_radius": config.radius_km,
         **platform.extra_params,
     }
 
@@ -415,6 +418,9 @@ def scrape_ebay(
         "_nkw": " ".join(config.keywords),
         "_udlo": config.min_price,
         "_udhi": config.max_price,
+        "buyerPostalCode": config.postal_code,
+        "itemFilter.name": "MaxDistance",
+        "itemFilter.value": config.radius_km,
         **platform.extra_params,
     }
 

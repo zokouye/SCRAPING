@@ -97,6 +97,11 @@ platforms, request settings, and alerts:
 }
 ```
 
+Postal code and radius settings are forwarded to the platform scrapers so that
+Leboncoin receives `radius`/`zipcode`, Vinted gets `search_radius` and
+`search_postal_code`, and eBay includes an appropriate `MaxDistance`
+item filter alongside `buyerPostalCode`.
+
 Set `"use_sample_data": true` in the configuration if you want to reuse the
 fixture payloads instead of performing live network requests (useful for CI or
 when developing new filters).
