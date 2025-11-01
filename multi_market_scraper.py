@@ -170,7 +170,7 @@ class HttpClient:
                 # Fallback to urllib when requests is unavailable
                 request_headers = dict(self.settings.headers)
                 if clean_params:
-                    url_with_params = f"{url}?{urllib.parse.urlencode(clean_params)}"
+                    url_with_params = f"{url}?{urllib.parse.urlencode(clean_params, doseq=True)}"
                 else:
                     url_with_params = url
                 request = urllib.request.Request(url_with_params, headers=request_headers)
@@ -198,20 +198,34 @@ def _clean_params(params: Optional[Mapping[str, Any]]) -> Dict[str, Any]:
     if not params:
         return {}
 
+    def _sanitize(value: Any) -> Any:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            trimmed = value.strip()
+            return trimmed or None
+        if isinstance(value, Mapping):
+            nested: Dict[str, Any] = {}
+            for nested_key, nested_value in value.items():
+                sanitized = _sanitize(nested_value)
+                if sanitized is not None:
+                    nested[nested_key] = sanitized
+            return nested or None
+        if isinstance(value, (list, tuple, set)):
+            sequence: List[Any] = []
+            for item in value:
+                sanitized_item = _sanitize(item)
+                if sanitized_item is not None:
+                    sequence.append(sanitized_item)
+            return sequence or None
+        return value
+
     clean: Dict[str, Any] = {}
     for key, value in params.items():
-        if value is None:
+        sanitized = _sanitize(value)
+        if sanitized is None:
             continue
-        if isinstance(value, str):
-            if not value.strip():
-                continue
-            clean[key] = value
-            continue
-        if isinstance(value, Mapping) and not value:
-            continue
-        if isinstance(value, (list, tuple, set)) and not value:
-            continue
-        clean[key] = value
+        clean[key] = sanitized
     return clean
 
 
