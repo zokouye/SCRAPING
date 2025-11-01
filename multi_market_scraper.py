@@ -343,6 +343,16 @@ def _coerce_float(value: Any) -> Optional[float]:
         return None
 
 
+def _radius_to_int(radius: Optional[float]) -> Optional[int]:
+    if radius is None:
+        return None
+    try:
+        return int(round(float(radius)))
+    except (TypeError, ValueError):
+        logger.debug("Invalid radius value: %s", radius)
+        return None
+
+
 def scrape_leboncoin(
     config: SearchConfig, http_client: Optional[HttpClient], platform: PlatformConfig
 ) -> List[Listing]:
@@ -359,7 +369,7 @@ def scrape_leboncoin(
         "price_min": config.min_price,
         "price_max": config.max_price,
         "zipcode": config.postal_code,
-        "radius": config.radius_km,
+        "radius": _radius_to_int(config.radius_km),
         **platform.extra_params,
     }
 
@@ -389,7 +399,7 @@ def scrape_vinted(
         "price_from": config.min_price,
         "price_to": config.max_price,
         "search_postal_code": config.postal_code,
-        "search_radius": config.radius_km,
+        "search_radius": _radius_to_int(config.radius_km),
         **platform.extra_params,
     }
 
@@ -418,11 +428,17 @@ def scrape_ebay(
         "_nkw": " ".join(config.keywords),
         "_udlo": config.min_price,
         "_udhi": config.max_price,
-        "buyerPostalCode": config.postal_code,
-        "itemFilter.name": "MaxDistance",
-        "itemFilter.value": config.radius_km,
         **platform.extra_params,
     }
+
+    postal_code = config.postal_code
+    if postal_code:
+        params["buyerPostalCode"] = postal_code
+
+    radius = _radius_to_int(config.radius_km)
+    if radius is not None and postal_code:
+        params["itemFilter(0).name"] = "MaxDistance"
+        params["itemFilter(0).value"] = radius
 
     try:
         response = http_client.get_json(platform.search_url(), params=params)
